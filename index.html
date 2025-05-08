@@ -1,0 +1,114 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Naseeb Quizy</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+    h1, h2 { text-align: center; }
+    .hidden { display: none; }
+    .question-form, .quiz-box, .result-box { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+    .option { margin: 10px 0; }
+    .progress { height: 10px; background: #ddd; border-radius: 5px; overflow: hidden; margin: 20px 0; }
+    .progress-bar { height: 100%; background: #4caf50; width: 0; transition: 0.3s; }
+    .question-numbers { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 10px; }
+    .question-number { width: 30px; height: 30px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .current { background: #4caf50; color: white; }
+    .correct { background: #2196f3; color: white; }
+    .wrong { background: #f44336; color: white; }
+  </style>
+</head>
+<body>
+  <h1>Naseeb Quizy</h1>  <div class="question-form">
+    <h2>Enter Questions</h2>
+    <textarea id="questionData" rows="10" style="width:100%;" placeholder='[{"question":"2+2?","options":["3","4","5","6"],"answer":1}, {...}]'></textarea>
+    <input type="number" id="numQuestions" placeholder="How many questions?" style="width: 100%; margin: 10px 0;" />
+    <button onclick="startQuiz()">Start Quiz</button>
+  </div>  <div class="quiz-box hidden">
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    <div id="quizContent"></div>
+    <div class="question-numbers" id="questionNumbers"></div>
+  </div>  <div class="result-box hidden">
+    <h2>Quiz Completed</h2>
+    <p id="score"></p>
+    <p id="timeTaken"></p>
+    <button onclick="location.reload()">Try Again</button>
+  </div>  <script>
+    let questions = [], selected = [], currentIndex = 0, startTime, userAnswers = [];
+
+    function startQuiz() {
+      try {
+        const allQuestions = JSON.parse(document.getElementById("questionData").value);
+        const count = parseInt(document.getElementById("numQuestions").value);
+        if (!Array.isArray(allQuestions) || isNaN(count)) return alert("Invalid input");
+        questions = [...allQuestions].sort(() => 0.5 - Math.random()).slice(0, count);
+        selected = new Array(count).fill(null);
+        document.querySelector(".question-form").classList.add("hidden");
+        document.querySelector(".quiz-box").classList.remove("hidden");
+        startTime = Date.now();
+        renderQuestion();
+        renderProgress();
+      } catch (e) {
+        alert("Please enter valid JSON format questions.");
+      }
+    }
+
+    function renderQuestion() {
+      const q = questions[currentIndex];
+      let html = `<h3>Question ${currentIndex + 1} of ${questions.length}</h3><p>${q.question}</p>`;
+      q.options.forEach((opt, idx) => {
+        html += `<div class="option"><button onclick="selectOption(${idx})">${opt}</button></div>`;
+      });
+      document.getElementById("quizContent").innerHTML = html;
+    }
+
+    function selectOption(optIndex) {
+      userAnswers[currentIndex] = optIndex;
+      selected[currentIndex] = questions[currentIndex].answer === optIndex;
+      updateQuestionNumber(currentIndex);
+      currentIndex++;
+      if (currentIndex < questions.length) {
+        renderQuestion();
+        renderProgress();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function renderProgress() {
+      const bar = document.getElementById("progressBar");
+      bar.style.width = `${(currentIndex / questions.length) * 100}%`;
+      renderQuestionNumbers();
+    }
+
+    function renderQuestionNumbers() {
+      const container = document.getElementById("questionNumbers");
+      container.innerHTML = "";
+      questions.forEach((_, i) => {
+        let className = "question-number";
+        if (i === currentIndex) className += " current";
+        else if (selected[i] === true) className += " correct";
+        else if (selected[i] === false) className += " wrong";
+        container.innerHTML += `<div class="${className}">${i + 1}</div>`;
+      });
+    }
+
+    function updateQuestionNumber(i) {
+      const nodes = document.querySelectorAll(".question-number");
+      if (nodes[i]) {
+        nodes[i].classList.remove("current");
+        nodes[i].classList.add(selected[i] ? "correct" : "wrong");
+      }
+    }
+
+    function finishQuiz() {
+      const correct = selected.filter(x => x === true).length;
+      const total = selected.length;
+      const time = Math.round((Date.now() - startTime) / 1000);
+      document.querySelector(".quiz-box").classList.add("hidden");
+      document.querySelector(".result-box").classList.remove("hidden");
+      document.getElementById("score").innerText = `Correct: ${correct}, Wrong: ${total - correct}`;
+      document.getElementById("timeTaken").innerText = `Time taken: ${time} seconds`;
+    }
+  </script></body>
+</html>
